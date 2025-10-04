@@ -1,29 +1,26 @@
-# Virtual environments
+# Ignore Python virtual environment
 venv/
-.env/
 
-# Compiled Python files
+# Ignore Python cache files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Data / cache / model files
-*.bin
-*.npy
-*.pt
-*.pth
-*.h5
+# Ignore system and IDE files
+.DS_Store
+.env
 *.log
 
-# OS / IDE files
-.DS_Store
-.vscode/
-.idea/
+# Ignore large data and model artifacts if needed
+*.pt
+*.bin
+*.h5
+*.pkl
+*.ckpt
 
-# Large local artifacts
-*.csv
-*.zip
-*.gz
-*.tar
+# (keep these because Streamlit needs them)
+!faiss_index.bin
+!embeddings.npy
+!publications_with_text.csv
 
