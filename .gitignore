@@ -1,0 +1,29 @@
+# Virtual environments
+venv/
+.env/
+
+# Compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data / cache / model files
+*.bin
+*.npy
+*.pt
+*.pth
+*.h5
+*.log
+
+# OS / IDE files
+.DS_Store
+.vscode/
+.idea/
+
+# Large local artifacts
+*.csv
+*.zip
+*.gz
+*.tar
+

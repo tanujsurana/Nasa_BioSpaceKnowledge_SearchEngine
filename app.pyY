@@ -1,0 +1,53 @@
+import os
+import streamlit as st
+import faiss
+import numpy as np
+import pandas as pd
+from summarizer import extractive_summary, abstractive_summary
+
+# -----------------------
+# Load FAISS Index + Data
+# -----------------------
+if not os.path.exists("faiss_index.bin"):
+    st.error("⚠️ No FAISS index found. Please run: python3 ingest.py && python3 vector_store.py")
+    st.stop()
+
+index = faiss.read_index("faiss_index.bin")
+
+if not os.path.exists("embeddings.npy") or not os.path.exists("publications_with_text.csv"):
+    st.error("⚠️ Missing supporting files. Please rerun ingest.py and vector_store.py.")
+    st.stop()
+
+embeddings = np.load("embeddings.npy")
+df = pd.read_csv("publications_with_text.csv")
+
+# -----------------------
+# Streamlit UI
+# -----------------------
+st.title("🚀 NASA Bioscience Knowledge Explorer")
+st.markdown("Explore 600+ NASA bioscience publications with AI-powered search and summaries.")
+
+query = st.text_input("🔎 Enter a search query (e.g., 'bone density loss in astronauts')")
+
+if query:
+    # For now, do naive keyword search on Title+Text
+    mask = df["Text"].str.contains(query, case=False, na=False) | df["Title"].str.contains(query, case=False, na=False)
+    results = df[mask].head(5)
+
+    if results.empty:
+        st.warning("❌ No matching publications found. Try another query.")
+    else:
+        for i, row in results.iterrows():
+            st.subheader(row["Title"])
+            st.write(row["Text"][:500] + "...")
+            
+            # Extractive summary
+            st.markdown("**📝 Extractive Summary:**")
+            st.write(extractive_summary(row["Text"]))
+            
+            # Abstractive summary
+            st.markdown("**🤖 Abstractive Summary:**")
+            st.write(abstractive_summary(row["Text"]))
+            
+            st.markdown("---")
+

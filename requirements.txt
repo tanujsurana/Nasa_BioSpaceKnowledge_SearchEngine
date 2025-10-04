@@ -1,0 +1,13 @@
+streamlit
+pandas
+tqdm
+beautifulsoup4
+requests
+faiss-cpu
+sentence-transformers
+transformers
+torch
+huggingface_hub
+scikit-learn
+nltk
+
