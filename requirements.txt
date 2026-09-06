@@ -4,10 +4,12 @@ tqdm
 beautifulsoup4
 requests
 faiss-cpu
-sentence-transformers
-transformers<5
-torch
+
+sentence-transformers==3.4.1
+transformers==4.48.3
+torch==2.6.0
 huggingface_hub
+
 scikit-learn
 nltk
 keybert==0.8.4
