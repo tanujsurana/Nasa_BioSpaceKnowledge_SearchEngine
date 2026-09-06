@@ -1,6 +1,8 @@
+# app.py
+
 import os
 
-# Force CPU / reduce threading issues on Streamlit Cloud
+# Force CPU usage on Streamlit Cloud
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -24,7 +26,7 @@ PUBS_FILE = "publications_with_text.csv"
 
 
 # --------------------------------------------------
-# Streamlit page config
+# Streamlit config
 # --------------------------------------------------
 
 st.set_page_config(
@@ -39,7 +41,7 @@ st.caption(
 
 
 # --------------------------------------------------
-# Check required files
+# Validate required files
 # --------------------------------------------------
 
 required_files = [
@@ -55,7 +57,7 @@ missing_files = [
 
 if missing_files:
     st.error(
-        "⚠️ Required search files are missing: "
+        "⚠️ Required files are missing: "
         + ", ".join(missing_files)
     )
 
@@ -68,7 +70,7 @@ if missing_files:
 
 
 # --------------------------------------------------
-# Load model
+# Load embedding model
 # --------------------------------------------------
 
 @st.cache_resource
@@ -107,7 +109,7 @@ def load_publications():
 
 
 # --------------------------------------------------
-# Load resources safely
+# Load resources
 # --------------------------------------------------
 
 try:
@@ -118,15 +120,12 @@ try:
 
 except Exception as e:
     st.error("❌ Failed to load application resources.")
-
-    # Useful while debugging deployment
     st.exception(e)
-
     st.stop()
 
 
 # --------------------------------------------------
-# Search interface
+# Search UI
 # --------------------------------------------------
 
 query = st.text_input(
@@ -142,7 +141,6 @@ query = st.text_input(
 if query.strip():
 
     try:
-        # Generate semantic embedding for user query
         query_vec = model.encode(
             [query],
             convert_to_numpy=True,
@@ -154,20 +152,19 @@ if query.strip():
             dtype="float32"
         )
 
-        # Retrieve top 3 similar publications
         distances, indices = index.search(
             query_vec,
             3
         )
 
     except Exception as e:
-        st.error("❌ An error occurred while performing semantic search.")
+        st.error("❌ Error while performing semantic search.")
         st.exception(e)
         st.stop()
 
 
     # --------------------------------------------------
-    # Display results
+    # Show results
     # --------------------------------------------------
 
     valid_results = 0
@@ -191,21 +188,21 @@ if query.strip():
 
         with st.expander(f"📄 {title}"):
 
-            # Show article preview
+            # Article preview
             if text:
-                preview_length = min(1000, len(text))
+                preview = text[:1000]
 
-                st.write(
-                    text[:preview_length]
-                    + ("..." if len(text) > preview_length else "")
-                )
+                if len(text) > 1000:
+                    preview += "..."
+
+                st.write(preview)
 
             else:
                 st.warning("No publication text is available.")
 
 
             # --------------------------------------------------
-            # Generate summaries
+            # Extractive summary
             # --------------------------------------------------
 
             if text.strip():
@@ -213,10 +210,7 @@ if query.strip():
                 try:
                     summary_ext = extractive_summary(text)
 
-                    st.markdown(
-                        "**Extractive Summary (keywords):**"
-                    )
-
+                    st.markdown("**Extractive Summary / Keywords:**")
                     st.write(summary_ext)
 
                 except Exception as e:
@@ -225,13 +219,14 @@ if query.strip():
                     )
 
 
+                # --------------------------------------------------
+                # Abstractive summary
+                # --------------------------------------------------
+
                 try:
                     summary_abs = abstractive_summary(text)
 
-                    st.markdown(
-                        "**Abstractive Summary:**"
-                    )
-
+                    st.markdown("**Abstractive Summary:**")
                     st.write(summary_abs)
 
                 except Exception as e:
@@ -241,7 +236,7 @@ if query.strip():
 
 
             # --------------------------------------------------
-            # Publication link
+            # Article link
             # --------------------------------------------------
 
             if "Link" in pubs.columns:
@@ -249,12 +244,11 @@ if query.strip():
                 link = row.get("Link")
 
                 if pd.notna(link) and str(link).strip():
+
                     st.markdown(
                         f"[🔗 Read full article]({link})"
                     )
 
 
     if valid_results == 0:
-        st.warning(
-            "No matching publications were found."
-        )
+        st.warning("No matching publications were found.")

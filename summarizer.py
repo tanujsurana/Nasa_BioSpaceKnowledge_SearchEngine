@@ -1,44 +1,88 @@
+# summarizer.py
+
 import os
 
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+import streamlit as st
 from keybert import KeyBERT
 from transformers import pipeline
 
-kw_model = KeyBERT()
 
-abstractive_model = pipeline(
-    model="facebook/bart-large-cnn",
-    device=-1
-)
+# --------------------------------------------------
+# Load KeyBERT lazily
+# --------------------------------------------------
 
-def extractive_summary(text, num_keywords=5):
-    """Generate a keyword-based summary using KeyBERT."""
-    try:
-        keywords = kw_model.extract_keywords(
-            text,
-            top_n=num_keywords
-        )
-        return ", ".join([kw for kw, _ in keywords])
-
-    except Exception as e:
-        return f"(extractive summary failed: {e})"
+@st.cache_resource
+def load_keybert_model():
+    return KeyBERT(
+        model="sentence-transformers/all-MiniLM-L6-v2"
+    )
 
 
-def abstractive_summary(
-    text,
-    model_name="facebook/bart-large-cnn",
-    max_tokens=512
-):
-    if len(text) > 2000:
-        text = text[:2000]
+# --------------------------------------------------
+# Load summarization model lazily
+# --------------------------------------------------
 
-    summary = abstractive_model(
+@st.cache_resource
+def load_summarization_pipeline():
+    return pipeline(
+        "summarization",
+        model="facebook/bart-large-cnn",
+        device=-1
+    )
+
+
+# --------------------------------------------------
+# Extractive summary / keywords
+# --------------------------------------------------
+
+def extractive_summary(text):
+
+    if not text or not text.strip():
+        return "No text available."
+
+    kw_model = load_keybert_model()
+
+    keywords = kw_model.extract_keywords(
         text,
-        max_length=200,
-        min_length=50,
+        keyphrase_ngram_range=(1, 2),
+        stop_words="english",
+        top_n=5
+    )
+
+    if not keywords:
+        return "No keywords found."
+
+    return ", ".join(
+        keyword
+        for keyword, score in keywords
+    )
+
+
+# --------------------------------------------------
+# Abstractive summary
+# --------------------------------------------------
+
+def abstractive_summary(text):
+
+    if not text or not text.strip():
+        return "No text available."
+
+    summarizer = load_summarization_pipeline()
+
+    # Keep input reasonably small for BART
+    text = text[:4000]
+
+    result = summarizer(
+        text,
+        max_length=150,
+        min_length=40,
         do_sample=False
     )
 
-    return summary[0]["summary_text"]
+    if not result:
+        return "Could not generate summary."
+
+    return result[0]["summary_text"]
