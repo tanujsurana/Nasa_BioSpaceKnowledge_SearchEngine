@@ -5,7 +5,7 @@ beautifulsoup4
 requests
 faiss-cpu
 sentence-transformers
-transformers
+transformers<5
 torch
 huggingface_hub
 scikit-learn
